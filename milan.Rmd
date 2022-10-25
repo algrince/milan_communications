@@ -1,0 +1,1070 @@
+---
+title: "Comunicaciones en Milan"
+author:
+- name: Ekaterina Mitiashkina, Adriana Cecilia Nguema Mbang
+date: 14.05.2019
+output:
+  html_document:
+    toc: true
+    toc_depth: 4
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    theme: united
+    highlight: tango
+---
+
+# Objetivos
+
+El objetivo general del trabajo es realizar un informe estad&iacute;stico de tipo descriptivo que permita comprender las caracter&iacute;sticas de las variables recogidas en la muestra. Como objetivos espec&iacute;ficos, se establecen los siguientes:  
+1. Construir una nueva hoja de datos que agregue la informaci&oacute;n de la hoja de datos original por celdas. Incluir en ella, para cada celda, la suma total del tr&aacute;fico generado en la celda y el promedio del tr&aacute;fico generado por cada interacci&oacute;n.  
+2. Proporcionar distribuciones de frecuencias de la variable Country code para los SMSs entrantes, para los salientes, para las llamadas entrantes, para las salientes y para el tr&aacute;fico de Internet. Interpretar los resultados en t&eacute;rminos de los pa&iacute;ses que m&aacute;s y menos tr&aacute;fico de mensajes SMS, llamadas e Internet generan.  
+3. Proporcionar una distribuci&oacute;n de frecuencias de la variable Square id, que permita visualizar la din&aacute;mica de generaci&oacute;n de interacciones en la ciudad de Mil&aacute;n.  
+4. Proporcionar una distribuci&oacute;n de frecuencias del tipo de interacci&oacute;n, clasificando cada una de ellas como de SMS, llamada o Internet.  
+5. En referencia a la hoja de datos que agrega la informaci&oacute;n por celdas, realizar un an&aacute;lisis descriptivo de las distribuciones de frecuencias de las siguientes variables:  
+  - Tr&aacute;fico total de SMSs recibidos y tr&aacute;fico promedio de SMSs recibidos por interacci&oacute;n.  
+  - Tr&aacute;fico total de SMSs enviados y tr&aacute;fico promedio de SMSs enviados por interacci&oacute;n.  
+  - Tr&aacute;fico total de llamadas recibidas y tr&aacute;fico promedio de llamadas recibidas por interacci&oacute;n.  
+  - Tr&aacute;fico total de llamadas realizadas y tr&aacute;fico promedio de llamadas realizadas por interacci&oacute;n.  
+  - Tr&aacute;fico total de de Internet y tr&aacute;fico promedio de Internet por interacci&oacute;n.  
+6. Para las variables indicadas en el punto anterior, realizar un an&aacute;lisis descriptivo comparativo que incluya medidas de posici&oacute;n, dispersi&oacute;n y forma, as&iacute; como la identificaci&oacute;n de celdas at&iacute;picas.  
+7. Realizar una transformaci&oacute;n logar&iacute;tmica de las variables se&ntilde;aladas en el punto 5 y analizar estas nuevas variables como en los puntos 5 y 6. Comparar los an&aacute;lisis realizados en la escala original con los realizados en escala logar&iacute;tmica.  
+
+# Agregaci&oacute;n de los datos
+Primero tenemos que importar los datos. En nuestro caso los datos originales vienen dados en el formato de texto (.txt). As&iacute; la importaci&oacute;n se hace utilizando la funci&oacute;n correspondiente que se encuentra en la pantalla de herramientas en la ruta File>Import Dataset>From Text (base) o con una funci&oacute;n read.delim()
+
+```{r}
+
+datos <- read.delim('sms-call-internet-mi-2013-11-01.txt')
+names(datos) <- c("Square id", "Time interval", "Country code", "SMS-in activity", "SMS-out activity", "Call-in activity", "Call-out activity","Internet traffic activity") #nombramos las variables necesarias
+summary(datos)
+
+```
+
+# Librer&iacute;as utilizadas
+```{r Librerias, echo=TRUE, include=FALSE}
+library(rgeos)
+library(maptools)
+library(sf)
+library(ggplot2)
+library(gpclib)
+library(mapproj)
+library(readxl)
+library(sf)
+library(tidyverse)
+library(dplyr)
+library(geojsonio)
+library(RgoogleMaps)
+library(ggmap)
+library(e1071)
+```
+
+# Distribuciones de frecuencias de la variable Country code
+
+## Distribuci&oacute;n de frecuencias para todos los tipos de interacciones
+
+El valor de "Country code" nulo no contiene la informaci&oacute;n representativa y encima hace la distribuci&oacute;n de frecuencias muy asim&eacute;trica y se complica su an&aacute;lisis por eso hemos puesto un l&iacute;mite correspondiente. Para ver los c&oacute;digos de los pa&iacute;ses m&aacute;s y menos frecuentes utilizamos los diagramas de barras poniendo los l&iacute;mites de tal manera que se vean 6-7 pa&iacute;ses. 
+
+La cantidad m&aacute;xima de las interacciones en Mil&aacute;n suced&iacute;an con los n&uacute;meros pertenecidos a **Italia** (cod. 39). Le siguen los c&oacute;digos de **Suecia** (cod. 46) y de **Francia** (cod. 33), luego - los de **Alemania** (cod. 49) y de **Egipto** (cod. 20). Al final, el ranking se cierra el c&oacute;digo de **Escocia** (cod. 44).
+
+```{r DF general max}
+code <- table(datos$`Country code`[datos$`Country code`>0]) 
+  barplot(code[code > 100000], main = 'DF maximas para todos los tipos de interacciones',
+          xlab = 'Codigos de paises', ylab = 'Distribucion de frecuencias')
+```
+
+Hab&iacute;a dos interacciones con **Guinea Ecuatorial** (cod. 240), la **isla de Martinica** (cod. 596), **Canada: Newfoundland and Labrador** (cod. 1709); tres interacciones con la **Isla Ascensi&oacute;n** (cod. 247); cuatro - con **Estados Unidos: Alabama** (cod. 1938) y cinco con **Vaticano** (cod. 379) y las **Islas Malvinas** (cod. 500).
+
+```{r DF general min}
+barplot(code[code < 6], main = 'DF minimas para todos los tipos de interacciones',
+          xlab = 'Codigos de paises', ylab = 'Distribucion de frecuencias')
+```
+
+Para hacer un an&aacute;lisis m&aacute;s detallado a&ntilde;adimos a la hoja de datos las tres columnas del formato l&oacute;gico que nos se&ntilde;alan que tipo de interacci&oacute;n hab&iacute;a en cada intervalo del tiempo.
+
+```{r Tipos de interaccion}
+datos$SMS <- !is.na(datos$'SMS-in activity') | !is.na(datos$'SMS-out activity')
+datos$Calls <- !is.na(datos$'Call-in activity') | !is.na(datos$'Call-out activity')
+datos$Internet <- !is.na(datos$'Internet traffic activity')
+```
+
+## Distribuci&oacute;n de frecuencias para los mensajes
+
+Podemos ver casi la misma proporci&oacute;n, pero no hay ninguna interacci&oacute;n con Suecia (cod. 46); aparecen interacciones con **Estados Unidos** sin especificar el regi&oacute;n (cod. 1).
+
+```{r DF SMS max}
+codeSMS <- table(datos$`Country code`[(datos$SMS == TRUE) & (datos$`Country code`>0)])
+  barplot(codeSMS[codeSMS > 22000], main = 'DF maximas para SMSs',
+          xlab = 'Codigos de paises', ylab = 'Distribucion de frecuencias')
+```
+
+La distribuci&oacute;n de las frecuencias menores de los SMSs no nos representa ninguna correlaci&oacute;n con la distribuci&oacute;n principal. 5 interacciones ten&iacute;an lugar con las **Islas Malvinas** (cod. 500) y con **Mexico** (cod. 18686); seis - con **Nepal** (cod. 977), con **C&aacute;nada: Manitoba** (cod. 1204) y otra vez con **C&aacute;nada: Alberta** (cod. 1587): siete - con **Birmania** (cod. 95), con **Pap&uacute;a Nueva Guinea** (cod. 675), con las **Islas V&iacute;rgenes Brit&aacute;nicas** (cod. 1284) y con **Kazahst&aacute;n** (cod. 7707).
+
+```{r DF SMS min}
+  barplot(codeSMS[codeSMS < 8], main = 'DF minimas para SMSs',
+          xlab = 'Codigos de paises', ylab = 'Distribucion de frecuencias')
+```
+
+## Distribuci&oacute;n de frecuencias para los mensajes entrantes
+
+Comparando con la representaci&oacute;n de las frecuencias m&aacute;ximas de SMSs en general, no ha cambiado ni la lista de los pa&iacute;ses, ni su posici&oacute;n respecto uno a otro. Pero todo esto es aplicable solamente si bajamos nuestro filtro porque los SMSs entrantes forman solamente una parte de los SMSs en general.
+
+```{r DF SMS-in max}
+codeSMSentr <- table(datos$`Country code`[!is.na(datos$'SMS-in activity') & (datos$`Country code`>0)])
+  barplot(codeSMSentr[codeSMSentr > 21000], main = 'DF maximas para SMSs entrantes',
+          xlab = 'Codigos de paises', ylab = 'Distribucion de frecuencias')
+```
+
+En el diagrama que representa las frecuencias m&aacute;s bajas los mismos pa&iacute;ses que en la gr&aacute;fica de la distribuci&oacute;n de frecuencias m&iacute;nimas de los SMSs en general. Las frecuencias tambi&eacute;n coinciden que nos permite hacer una conclusi&oacute;n que todas las interacciones (SMSs) menos frecuentes eran del tipo entrante.
+
+```{r DF SMS-in min}
+  barplot(codeSMSentr[codeSMSentr < 8], main = 'DF minimas para SMSs entrantes',
+          xlab = 'Codigos de paises', ylab = 'Distribucion de frecuencias')
+```
+
+
+## Distribuci&oacute;n de frecuencias para los mensajes salientes
+
+Con los mensajes salientes ponemos un l&iacute;mite m&aacute;s bajo de 8000. Aparecen **Rusia** (cod. 7) y **Polonia** (cod. 48), "desplazando"" a los EE. UU. y Egipto.
+
+```{r DF SMS-out max}
+codeSMSsal <- table(datos$`Country code`[!is.na(datos$'SMS-out activity') & (datos$`Country code`>0)])
+  barplot(codeSMSsal[codeSMSsal > 8000], main = 'DF maximas para SMSs salientes',
+          xlab = 'Codigos de pai;ses', ylab = 'Distribucion de frecuencias')
+```
+
+Los mensajes salientes menos frecuentes son: los 4 a **Hawaii** (cod. 1808); los 5 a **Pap&uacute;a Nueva Guinea** (cod. 675); los 6 a **Nicaragua** (cod. 505), **Mongolia** (cod. 976), **Canada: Man&iacute;toba** (cod. 1204), las **islas V&iacute;rgenes Brit&aacute;nicos** (cod. 1587); los 8 a **Etiop&iacute;a** (cod. 251) y a una regi&oacute;n desconocida de **M&eacute;xico** (cod. 18099).
+
+```{r DF SMS-out min}
+  barplot(codeSMSsal [codeSMSsal < 9], main = 'DF minimas para SMSs salientes',
+          xlab = 'Codigos de paises', ylab = 'Distribucion de frecuencias')
+```
+
+## Distribuci&oacute;n de frecuencias para las llamadas 
+
+Los pa&iacute;ses que ya conocemos son **Italia** (cod. 39) y **Egipto** (cod. 20). Mientras que los pa&iacute;ses "nuevos" son: **Rumania** (cod. 40), **China** (cod. 86), **Senegal** (cod. 221), **Ucrania** (cod. 380) y **Bangladesh** (cod. 880). Probablemente unos de estos pa&iacute;ses tienen el nivel de la cantidad de interacciones tan alto por no utilizar Internet.
+
+```{r DF llamadas max}
+codeCalls <- table(datos$`Country code`[(datos$Calls == TRUE) & (datos$`Country code`>0)])
+  barplot(codeCalls[codeCalls > 40000], main = 'DF maximas para llamadas',
+          xlab = 'Codigos de paises', ylab = 'Distribucion de frecuencias')
+```
+
+Los c&oacute;digos de las interacciones m&iacute;nimas, de la frecuencia 1 hasta 4: **Canada: Alberta** (cod. 1403), **Guinea Ecuatorial** (cod. 240), **Isla Mart&iacute;nica** (cod. 596), **Canada: Newfoundland and Labrador** (cod. 1709), **la Isla Ascenci&oacute;n** (cod. 247), **Burundi** (cod. 257), **Estados Unidos: Texas** (cod. 1214), **Estados Unidos: Alabama** (cod. 1938).
+
+```{r DF llamadas min}
+  barplot(codeCalls[codeCalls < 5], main = 'DF minimas para llamadas',
+          xlab = 'Codigos de paises', ylab = 'Distribucion de frecuencias')
+```
+
+## Distribuci&oacute;n de frecuencias para las llamadas entrantes
+
+Las frecuencias de las llamadas entrantes son m&aacute;s bajas que las de las llamadas en general y los pa&iacute;ses a que corresponde el c&oacute;digo se han vuelto a cambiar y en este caso parecen m&aacute;s en los que hemos visto en las representaciones de las frecuencias de SMS y interacciones generales. El c&oacute;digo m&aacute;s frecuente es el de **Italia** (cod. 39), le siguen **Francia** (cod. 33) y **Suiza** (cod. 41), luego - **Rumania** (cod. 40) y **Reino Unido** (cod. 44). Los &uacute;ltimos dos c&oacute;digos que apenas superan el l&iacute;mite de 9000 son de **Alemania** (cod. 49) y de **Rusia** (cod. 7).
+
+```{r DF llamadas-in max}
+codeCallsentr <- table(datos$`Country code`[!is.na(datos$'Call-in activity') & (datos$`Country code`>0)])
+  barplot(codeCallsentr[codeCallsentr > 9000], main = 'DF maximas para llamadas entrantes',
+          xlab = 'Codigos de pa&iacute;ses', ylab = 'Distribucion de frecuencias')
+```
+
+En la distribuci&oacute;n de frecuencias m&aacute;s bajas de llamadas entrantes est&aacute;n presentados casi los mismos pa&iacute;ses que en la distribuci&oacute;n de frecuencias de las llamadas total con algunas diferencias: aparecen **Seychelles** (cod. 248), **Pap&uacute;a Nueva Guinea** (cod. 675), **Vaticano** (cod. 379) y desaparecen la Isla Ascenci&oacute;n (cod. 247), Burundi (cod. 257), Canada: Newfoundland and Labrador (cod. 1709).
+
+```{r DF llamadas-in min}
+  barplot(codeCallsentr[codeCallsentr < 6], main = 'DF minimas para llamadas entrantes',
+          xlab = 'Codigos de paises', ylab = 'Distribucion de frecuencias')
+```
+
+
+## Distribuci&oacute;n de frecuencias para las llamadas salientes
+
+Se nota que las frecuencias de las llamadas salientes son m&aacute;s altas que las de las llamadas entrantes y los c&oacute;digos coinciden con los c&oacute;digos que hemos visto en la representaci&oacute;n de las frecuencias de las llamadas en general.
+
+```{r DF llamadas-out max}
+codeCallssal <- table(datos$`Country code`[!is.na(datos$`Call-out activity`) & (datos$`Country code`>0)])
+  barplot(codeCallssal[codeCallssal > 34000], main = 'DF maximas para llamadas salientes',
+        xlab = 'Codigos de paises', ylab = 'Distribucion de frecuencias')
+```
+
+Los c&oacute;digos de los pa&iacute;ses del nivel de interacciones minimal, en el orden creciendo: **Mal&iacute;** (cod. 223), **Islandia** (cod. 354), **Canada: Newfoundland and Labrador** (cod. 1709), **Uzbekist&aacute;n** (cod. 998), **Gab&oacute;n** (cod. 241), **Burundi** (cod. 257).
+
+```{r DF llamadas-out min}
+  barplot(codeCallssal[codeCallssal < 6], main = 'DF minimas para llamadas salientes',
+        xlab = 'Codigos de paises', ylab = 'Distribucion de frecuencias')
+```
+
+## Distribuci&oacute;n de frecuencias para el tr&aacute;fico de Internet
+
+Los tel&eacute;fonos **italianos** han utilizado la cantidad m&aacute;xima del tr&aacute;fico (cod. 39), los de **Francia** (cod. 33), **Suecia** (cod. 46) y **Alemania** (cod. 49) han utilizado mucho menos, pero los c&oacute;digos de estos pa&iacute;ses siguen formando el grupo de las frecuencias de interacci&oacute;n m&aacute;s alta con los c&oacute;digos de **B&eacute;lgica** (cod. 32), **Suiza** (cod. 41) y **Reino Unido** (cod. 44).
+
+```{r DF Internet max}
+codeInternet <- table(datos$`Country code`[(datos$Internet == TRUE) & (datos$`Country code`>0)])
+  barplot(codeInternet[codeInternet > 31000], main = 'DF maximas para trafico de Internet',
+        xlab = 'Codigos de pa&iacute;ses', ylab = 'Distribucion de frecuencias')
+```
+
+Aparece el c&oacute;digo de Egipto, el pa&iacute;s que era uno de los l&iacute;deres de SMSs y llamadas. Los otros c&oacute;digos pertenecen a: **Moldavia** (cod. 373), **El Salvador** (cod. 503) con la freq. 4, **Nueva Zelanda** (cod. 64) y **Bermuda** (cod. 14413) con freq. 6; c&oacute;digo 88235 pertenece a **"Jasper Wireless satellite services"** (GPS?) con freq. 9, **Montenegro** (cod. 382) con freq. 10.
+
+```{r DF Internet min}
+ barplot(codeInternet[codeInternet < 12], main = 'DF minimas para trafico de Internet',
+        xlab = 'Codigos de paises', ylab = 'Distribucion de frecuencias')
+```
+
+# Representaci&oacute;n cartogr&aacute;fica de las distribuciones de frecuencias
+
+Para contribuir a que los colores de los mapas sean m&aacute;s informativos, hemos considerado las frecuencias en escala logar&iacute;tmica. Como el rango que abarcan los valores es grande, una escala logar&iacute;tmica proporciona un medio mejor de visualizaci&oacute;n de los datos. La transformaci'on se hace mediante la funci&oacute;n log().
+
+```{r echo=FALSE,include=FALSE}
+Regions <- readShapePoly("Europe.shp")
+regions <- fortify(Regions, region = "NAME")
+str(regions)
+```
+
+```{r Codigos de paises, echo=FALSE,include=FALSE}
+codes <- read_xlsx("codes.xlsx")
+```
+
+```{r DF general por paises, echo=FALSE, include=FALSE}
+GreeceGen <- table(datos$`Country code`[datos$`Country code` == 30])
+NetherlandsGen <- table(datos$`Country code`[datos$`Country code` == 31])
+BelgiumGen <- table(datos$`Country code`[datos$`Country code` == 32])
+FranceGen <- table(datos$`Country code`[datos$`Country code` == 33])
+SpainGen <- table(datos$`Country code`[datos$`Country code` == 34])
+GibraltarGen <- table(datos$`Country code`[datos$`Country code` == 350])
+PortugalGen <- table(datos$`Country code`[datos$`Country code` == 351])
+LuxembourgGen <- table(datos$`Country code`[datos$`Country code` == 352])
+IrelandGen <- table(datos$`Country code`[datos$`Country code` == 353])
+IcelandGen <- table(datos$`Country code`[datos$`Country code` == 354])
+AlbaniaGen <- table(datos$`Country code`[datos$`Country code` == 355])
+MaltaGen <- table(datos$`Country code`[datos$`Country code` == 356])
+CyprusGen <- table(datos$`Country code`[datos$`Country code` == 357])
+FinlandGen <- table(datos$`Country code`[datos$`Country code` == 358])
+BulgariaGen <- table(datos$`Country code`[datos$`Country code` == 359])
+HungaryGen <- table(datos$`Country code`[datos$`Country code` == 36])
+LithuaniaGen <- table(datos$`Country code`[datos$`Country code` == 370])
+LatviaGen <- table(datos$`Country code`[datos$`Country code` == 371])
+EstoniaGen <- table(datos$`Country code`[datos$`Country code` == 372])
+MoldovaGen <- table(datos$`Country code`[datos$`Country code` == 373])
+ArmeniaGen <- table(datos$`Country code`[datos$`Country code` == 374])
+BelarusGen <- table(datos$`Country code`[datos$`Country code` == 375])
+AndorraGen <- table(datos$`Country code`[datos$`Country code` == 376])
+MonacoGen <- table(datos$`Country code`[datos$`Country code` == 377])
+San.MarinoGen <- table(datos$`Country code`[datos$`Country code` == 378])
+VaticanGen <- table(datos$`Country code`[datos$`Country code` == 379])
+UkraineGen <- table(datos$`Country code`[datos$`Country code` == 380])
+SerbiaGen <- table(datos$`Country code`[datos$`Country code` == 381])
+MontenegroGen <- table(datos$`Country code`[datos$`Country code` == 382])
+CroatiaGen <- table(datos$`Country code`[datos$`Country code` == 385])
+SloveniaGen <- table(datos$`Country code`[datos$`Country code` == 386])
+Bosnia.HerzegovinaGen <- table(datos$`Country code`[datos$`Country code` == 387])
+MacedoniaGen <- table(datos$`Country code`[datos$`Country code` == 389])
+ItalyGen <- table(datos$`Country code`[datos$`Country code` == 39])
+RomaniaGen <- table(datos$`Country code`[datos$`Country code` == 40])
+SwitzerlandGen <- table(datos$`Country code`[datos$`Country code` == 41])
+Czech.RepublicGen <- table(datos$`Country code`[datos$`Country code` == 420])
+SlovakiaGen <- table(datos$`Country code`[datos$`Country code` == 421])
+LiechtensteinGen <- table(datos$`Country code`[datos$`Country code` == 423])
+AustriaGen <- table(datos$`Country code`[datos$`Country code` == 43])
+United.KingdomGen <- table(datos$`Country code`[datos$`Country code` == 44])
+DenmarkGen <- table(datos$`Country code`[datos$`Country code` == 45])
+SwedenGen <- table(datos$`Country code`[datos$`Country code` == 46])
+NorwayGen <- table(datos$`Country code`[datos$`Country code` == 47])
+PolandGen <- table(datos$`Country code`[datos$`Country code` == 48])
+GermanyGen <- table(datos$`Country code`[datos$`Country code` == 49])
+RusiaGen <- table(datos$`Country code`[datos$`Country code` == 7])
+TurkeyGen <- table(datos$`Country code`[datos$`Country code` == 90])
+AzerbaijanGen <- table(datos$`Country code`[datos$`Country code` == 994])
+GeorgiaGen <- table(datos$`Country code`[datos$`Country code` == 995])
+```
+
+```{r DF de SMSs por paises, echo=FALSE, include=FALSE}
+GreeceSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 30])
+NetherlandsSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 31])
+BelgiumSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 32])
+FranceSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 33])
+SpainSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 34])
+GibraltarSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 350])
+PortugalSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 351])
+LuxembourgSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 352])
+IrelandSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 353])
+IcelandSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 354])
+AlbaniaSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 355])
+MaltaSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 356])
+CyprusSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 357])
+FinlandSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 358])
+BulgariaSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 359])
+HungarySMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 36])
+LithuaniaSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 370])
+LatviaSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 371])
+EstoniaSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 372])
+MoldovaSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 373])
+ArmeniaSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 374])
+BelarusSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 375])
+AndorraSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 376])
+MonacoSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 377])
+San.MarinoSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 378])
+VaticanSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 379])
+UkraineSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 380])
+SerbiaSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 381])
+MontenegroSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 382])
+CroatiaSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 385])
+SloveniaSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 386])
+Bosnia.HerzegovinaSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 387])
+MacedoniaSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 389])
+ItalySMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 39])
+RomaniaSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 40])
+SwitzerlandSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 41])
+Czech.RepublicSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 420])
+SlovakiaSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 421])
+LiechtensteinSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 423])
+AustriaSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 43])
+United.KingdomSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 44])
+DenmarkSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 45])
+SwedenSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 46])
+NorwaySMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 47])
+PolandSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 48])
+GermanySMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 49])
+RusiaSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 7])
+TurkeySMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 90])
+AzerbaijanSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 994])
+GeorgiaSMS <- table(datos$`Country code`[datos$SMS == TRUE & datos$`Country code` == 995])
+```
+
+```{r DF de llamadas por paises, echo=FALSE, include=FALSE}
+GreeceCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 30])
+NetherlandsCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 31])
+BelgiumCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 32])
+FranceCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 33])
+SpainCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 34])
+GibraltarCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 350])
+PortugalCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 351])
+LuxembourgCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 352])
+IrelandCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 353])
+IcelandCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 354])
+AlbaniaCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 355])
+MaltaCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 356])
+CyprusCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 357])
+FinlandCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 358])
+BulgariaCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 359])
+HungaryCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 36])
+LithuaniaCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 370])
+LatviaCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 371])
+EstoniaCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 372])
+MoldovaCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 373])
+ArmeniaCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 374])
+BelarusCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 375])
+AndorraCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 376])
+MonacoCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 377])
+San.MarinoCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 378])
+VaticanCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 379])
+UkraineCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 380])
+SerbiaCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 381])
+MontenegroCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 382])
+CroatiaCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 385])
+SloveniaCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 386])
+Bosnia.HerzegovinaCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 387])
+MacedoniaCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 389])
+ItalyCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 39])
+RomaniaCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 40])
+SwitzerlandCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 41])
+Czech.RepublicCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 420])
+SlovakiaCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 421])
+LiechtensteinCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 423])
+AustriaCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 43])
+United.KingdomCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 44])
+DenmarkCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 45])
+SwedenCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 46])
+NorwayCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 47])
+PolandCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 48])
+GermanyCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 49])
+RusiaCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 7])
+TurkeyCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 90])
+AzerbaijanCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 994])
+GeorgiaCALLS <- table(datos$`Country code`[datos$Calls == TRUE & datos$`Country code` == 995])
+```
+
+```{r DF de Internet por paises, echo=FALSE, include=FALSE}
+GreeceINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 30])
+NetherlandsINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 31])
+BelgiumINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 32])
+FranceINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 33])
+SpainINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 34])
+GibraltarINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 350])
+PortugalINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 351])
+LuxembourgINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 352])
+IrelandINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 353])
+IcelandINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 354])
+AlbaniaINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 355])
+MaltaINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 356])
+CyprusINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 357])
+FinlandINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 358])
+BulgariaINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 359])
+HungaryINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 36])
+LithuaniaINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 370])
+LatviaINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 371])
+EstoniaINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 372])
+MoldovaINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 373])
+ArmeniaINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 374])
+BelarusINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 375])
+AndorraINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 376])
+MonacoINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 377])
+San.MarinoINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 378])
+VaticanINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 379])
+UkraineINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 380])
+SerbiaINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 381])
+MontenegroINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 382])
+CroatiaINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 385])
+SloveniaINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 386])
+Bosnia.HerzegovinaINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 387])
+MacedoniaINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 389])
+ItalyINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 39])
+RomaniaINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 40])
+SwitzerlandINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 41])
+Czech.RepublicINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 420])
+SlovakiaINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 421])
+LiechtensteinINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 423])
+AustriaINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 43])
+United.KingdomINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 44])
+DenmarkINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 45])
+SwedenINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 46])
+NorwayINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 47])
+PolandINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 48])
+GermanyINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 49])
+RusiaINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 7])
+TurkeyINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 90])
+AzerbaijanINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 994])
+GeorgiaINTERNET <- table(datos$`Country code`[datos$Internet == TRUE & datos$`Country code` == 995])
+
+```
+
+```{r Vectores, echo=FALSE, include=FALSE}
+Greece <- c(GreeceGen, GreeceSMS, GreeceCALLS, GreeceINTERNET, "Greece")
+Netherlands <- c(NetherlandsGen, NetherlandsSMS, NetherlandsCALLS, NetherlandsINTERNET, "Netherlands")
+Belgium <- c(BelgiumGen, BelgiumSMS, BelgiumCALLS, BelgiumINTERNET, "Belgium")
+France <- c(FranceGen, FranceSMS, FranceCALLS, FranceINTERNET, "France")
+Spain <- c(SpainGen, SpainSMS, SpainCALLS, SpainINTERNET, "Spain")
+Gibraltar <- c(GibraltarGen, GibraltarSMS, GibraltarCALLS, 0, "Gibraltar")
+Portugal <- c(PortugalGen, PortugalSMS, PortugalCALLS, PortugalINTERNET, "Portugal")
+Luxembourg <- c(LuxembourgGen, LuxembourgSMS, LuxembourgCALLS, LuxembourgINTERNET, "Luxembourg")
+Ireland <- c(IrelandGen, IrelandSMS, IrelandCALLS, IrelandINTERNET, "Ireland")
+Iceland <- c(IcelandGen, IcelandSMS, IcelandCALLS, IcelandINTERNET, "Iceland")
+Albania <- c(AlbaniaGen, AlbaniaSMS, AlbaniaCALLS, AlbaniaINTERNET, "Albania")
+Malta <- c(MaltaGen, MaltaSMS, MaltaCALLS, MaltaINTERNET, "Malta")
+Cyprus <- c(CyprusGen, CyprusSMS, CyprusCALLS, CyprusINTERNET, "Cyprus")
+Finland <- c(FinlandGen, FinlandSMS, FinlandCALLS, FinlandINTERNET, "Finland")
+Bulgaria <- c(BulgariaGen, BulgariaSMS, BulgariaCALLS, BulgariaINTERNET, "Bulgaria")
+Hungary <- c(HungaryGen, HungarySMS, HungaryCALLS, HungaryINTERNET, "Hungary")
+Lithuania <- c(LithuaniaGen, LithuaniaSMS, LithuaniaCALLS, LithuaniaINTERNET, "Lithuania")
+Latvia <- c(LatviaGen, LatviaSMS, LatviaCALLS, LatviaINTERNET, "Latvia")
+Estonia <- c(EstoniaGen, EstoniaSMS, EstoniaCALLS, EstoniaINTERNET, "Estonia")
+Moldova <- c(MoldovaGen, MoldovaSMS, MoldovaCALLS, MoldovaINTERNET, "Moldova")
+Armenia <- c(ArmeniaGen, ArmeniaSMS, ArmeniaCALLS, 0, "Armenia")
+Belarus <- c(BelarusGen, BelarusSMS, BelarusCALLS, BelarusINTERNET, "Belarus")
+Andorra <- c(AndorraGen, 0, AndorraCALLS, 0, "Andorra")
+Monaco <- c(MonacoGen, MonacoSMS, MonacoCALLS, 0, "Monaco")
+San.Marino <- c(San.MarinoGen, 0, San.MarinoCALLS, 0, "San.Marino")
+Ukraine <- c(UkraineGen, UkraineSMS, UkraineCALLS, UkraineINTERNET, "Ukraine")
+Serbia <- c(SerbiaGen, SerbiaSMS, SerbiaCALLS, SerbiaINTERNET, "Serbia")
+Croatia <- c(CroatiaGen, CroatiaSMS, CroatiaCALLS, CroatiaINTERNET, "Croatia")
+Slovenia <- c(SloveniaGen, SloveniaSMS, SloveniaCALLS, SloveniaINTERNET, "Slovenia")
+Bosnia.Herzegovina <- c(Bosnia.HerzegovinaGen,Bosnia.HerzegovinaSMS,Bosnia.HerzegovinaCALLS, 0, "Bosnia Herzegovina")
+Macedonia <- c(MacedoniaGen, MacedoniaSMS, MacedoniaCALLS, MacedoniaINTERNET, "Macedonia")
+Italy <- c(ItalyGen, ItalySMS, ItalyCALLS, ItalyINTERNET, "Italy")
+Romania <- c(RomaniaGen, RomaniaSMS, RomaniaCALLS, RomaniaINTERNET, "Romania")
+Switzerland <- c(SwitzerlandGen, SwitzerlandSMS, SwitzerlandCALLS, SwitzerlandINTERNET, "Switzerland")
+Czech.Republic <- c(Czech.RepublicGen, Czech.RepublicSMS, Czech.RepublicCALLS, Czech.RepublicINTERNET, "Czech Republic")
+Slovakia <- c(SlovakiaGen, SlovakiaSMS, SlovakiaCALLS, SlovakiaINTERNET, "Slovakia")
+Liechtenstein <- c(LiechtensteinGen, 0, LiechtensteinCALLS,0, "Liechtenstein")
+Austria <- c(AustriaGen, AustriaSMS, AustriaCALLS, AustriaINTERNET, "Austria")
+United.Kingdom <- c(United.KingdomGen, United.KingdomSMS, United.KingdomCALLS, United.KingdomINTERNET, "United Kingdom")
+Denmark <- c(DenmarkGen, DenmarkSMS, DenmarkCALLS, DenmarkINTERNET, "Denmark")
+Sweden <- c(SwedenGen, SwedenSMS, SwedenCALLS, SwedenINTERNET, "Sweden")
+Norway <- c(NorwayGen, NorwaySMS, NorwayCALLS, NorwayINTERNET, "Norway")
+Poland <- c(PolandGen, PolandSMS, PolandCALLS, PolandINTERNET, "Poland")
+Germany <- c(GermanyGen, GermanySMS, GermanyCALLS, GermanyINTERNET, "Germany")
+Russia <- c(RusiaGen, RusiaSMS, RusiaCALLS, RusiaINTERNET, "Russia")
+Turkey <- c(TurkeyGen, TurkeySMS, TurkeyCALLS, TurkeyINTERNET, "Turkey")
+Azerbaijan <- c(AzerbaijanGen, AzerbaijanSMS, AzerbaijanCALLS, 0, "Azerbaijan")
+Georgia <- c(GeorgiaGen, GeorgiaSMS, GeorgiaCALLS, 0, "Georgia")
+
+```
+
+```{r Creacion de la hoja de datos, echo=FALSE, include=FALSE}
+cont <- matrix(nrow = 0, ncol = 5)
+cont <- rbind(cont, Greece) 
+cont <- rbind(cont, Netherlands) 
+cont <- rbind(cont, Belgium) 
+cont <- rbind(cont, France) 
+cont <- rbind(cont, Spain) 
+cont <- rbind(cont, Gibraltar)
+cont <- rbind(cont, Portugal) 
+cont <- rbind(cont, Luxembourg) 
+cont <- rbind(cont, Ireland) 
+cont <- rbind(cont, Iceland) 
+cont <- rbind(cont, Albania) 
+cont <- rbind(cont, Malta) 
+cont <- rbind(cont, Cyprus) 
+cont <- rbind(cont, Finland) 
+cont <- rbind(cont, Bulgaria) 
+cont <- rbind(cont, Hungary) 
+cont <- rbind(cont, Lithuania) 
+cont <- rbind(cont, Latvia) 
+cont <- rbind(cont, Estonia) 
+cont <- rbind(cont, Moldova) 
+cont <- rbind(cont, Armenia) 
+cont <- rbind(cont, Belarus) 
+cont <- rbind(cont, Andorra) 
+cont <- rbind(cont, Monaco) 
+cont <- rbind(cont, San.Marino) 
+cont <- rbind(cont, Ukraine) 
+cont <- rbind(cont, Serbia) 
+cont <- rbind(cont, Croatia) 
+cont <- rbind(cont, Slovenia) 
+cont <- rbind(cont, Bosnia.Herzegovina) 
+cont <- rbind(cont, Macedonia) 
+cont <- rbind(cont, Italy) 
+cont <- rbind(cont, Romania) 
+cont <- rbind(cont, Switzerland) 
+cont <- rbind(cont, Czech.Republic) 
+cont <- rbind(cont, Slovakia) 
+cont <- rbind(cont, Liechtenstein) 
+cont <- rbind(cont, Austria) 
+cont <- rbind(cont, United.Kingdom) 
+cont <- rbind(cont, Denmark) 
+cont <- rbind(cont, Sweden)
+cont <- rbind(cont, Norway)
+cont <- rbind(cont, Poland) 
+cont <- rbind(cont, Germany) 
+cont <- rbind(cont, Russia) 
+cont <- rbind(cont, Turkey) 
+cont <- rbind(cont, Azerbaijan) 
+cont <- rbind(cont, Georgia)
+colnames(cont) <- c("General", "SMS", "Calls", "Internet", "id")
+cont <- data.frame(cont)
+```
+
+```{r Preparacion de datos para el mapa, echo=FALSE, message=FALSE, warning=FALSE}
+regions2 <- inner_join(cont, regions, by = "id")
+
+regions2$long <- as.numeric(as.character(regions2$long))
+regions2$lat <- as.numeric(as.character(regions2$lat))
+regions2$General <- as.numeric(as.character(regions2$General))
+regions2$SMS <- as.numeric(as.character(regions2$SMS))
+regions2$Calls <- as.numeric(as.character(regions2$Calls))
+regions2$Internet <- as.numeric(as.character(regions2$Internet))
+
+regions2$logGeneral <- log(regions2$General)
+regions2$logSMS <- log(regions2$SMS)
+regions2$logCalls <- log(regions2$Calls)
+regions2$logInternet <- log(regions2$Internet)
+```
+
+```{r Population, echo=FALSE, include=FALSE, warning=FALSE}
+population <- read_xls('population.xls')
+population$'pop2013' <- population$...58
+colnames(population) <- c("id", "Code", "Indicator name", "Indicator code", 1960:2018, "pop2013")
+id <- population$id
+pop2013 <- population$pop2013
+population2013 <- matrix(nrow = 267, ncol = 0)
+population2013 <- cbind(population2013, id)
+population2013 <- cbind(population2013, pop2013)
+population2013 <- data.frame(population2013)
+population2013$id <- as.character(population2013$id)
+population2013$pop2013 <- as.numeric(as.character(population2013$pop2013))
+popRussia <- c("Russia", 143506911)
+popSlovakia <- c("Slovakia", 5413393)
+popBosnia <- c("Bosnia Herzegovina", 3604999)
+popMacedonia <- c("Macedonia", 2075739)
+population2013 <- rbind(population2013, popRussia)
+population2013 <- rbind(population2013, popSlovakia)
+population2013 <- rbind(population2013, popBosnia)
+population2013 <- rbind(population2013, popMacedonia)
+
+regions3 <- inner_join(population2013, regions2, by = "id")
+regions3$pop2013 <- as.numeric(as.character(regions3$pop2013))
+
+regions3$DGeneral <- (regions3$General) / (regions3$pop2013) 
+regions3$DSMS <- (regions3$SMS) /(regions3$pop2013) 
+regions3$DCalls <- (regions3$Calls) / (regions3$pop2013) 
+regions3$DInternet <- (regions3$Internet) / (regions3$pop2013)
+
+regions3$logDGeneral <- log(regions3$DGeneral)
+regions3$logDSMS <- log(regions3$DSMS)
+regions3$logDCalls <- log(regions3$DCalls)
+regions3$logDInternet <- log(regions3$DInternet)
+```
+
+## Tr&aacute;fico general
+
+Podemos ver que las interacciones m&aacute;s frecuentes que ten&iacute;an lugar pertenecen a **Italia**. Los pa&iacute;ses de Europa Central tienen el nivel de la frecuencia parecido, ya que aparecen regiones con el nivel m&aacute;s bajo: **Balcanes**, **Portugal**, pa&iacute;ses del **B&aacute;ltico** y pa&iacute;ses **n&oacute;rdicos** excepto de Suecia. Adem&aacute;s, este mapa representa que la cantidad de interacciones (por poblaci&oacute;n) relativamente grandes pertenecen a: **Rumania**, **Austria**, **B&eacute;lgica**, **Irlanda**, **Albania** y **Letonia**, **Lituania**, **Estonia**, **Moldavia** y **Francia**.
+
+```{r Mapa de Europa: Trafico general, echo=FALSE}
+ggplot() + geom_map(data = regions2,
+                    aes(map_id = id, colour = "red",
+                        fill = regions2$logGeneral), 
+                    map = regions2) +
+  expand_limits(x = regions2$long, y = regions2$lat) +
+  scale_fill_continuous(name = "Frecuencia", type = "viridis") +
+  scale_color_brewer(name = "Fronteras", type = "div",  palette = 5) +
+  coord_map() +
+  labs(title = "Mapa de Europa: Trafico general",
+       y = "latitud", x = "longitud")
+```
+
+```{r Mapa de Europa: Trafico general relativo, echo=FALSE}
+ggplot() + geom_map(data = regions3, 
+                    aes(map_id = id, colour = "red",
+                        fill = regions3$logDGeneral), 
+                    map = regions3) +
+  expand_limits(x = regions3$long, y = regions3$lat) +
+  scale_fill_continuous(name = "Frecuencia", type = "viridis") +
+  scale_color_brewer(name = "Fronteras", type = "div",  palette = 5) +
+  coord_map() +
+  labs(title = "Mapa de Europa: Trafico general relativo",
+       y = "latitud", x = "longitud") 
+```
+
+## Tr&aacute;fico de SMSs
+
+Los pa&iacute;ses con n&uacute;meros m&aacute;s activos en mandar mensajes son: **Reino Unido**, **Francia** y **Suiza**. A su vez, **Suecia** demuestra la actividad m&aacute;s alta entre todos los pa&iacute;ses n&oacute;rdicos y entre toda la Europa si comparamos nuestros datos respecto a la poblaci&oacute;n. En estos t&eacute;rminos tambi&eacute;n sobresalen los pa&iacute;ses **B&aacute;lticos** (excepto de Polonia), **Balcanes**, **Rep&uacute;blica Checa**, **Austria**, **Eslovaquia**, **Francia**, **B&eacute;lgica** y **Reino Unido**.
+
+```{r Mapa de Europa: SMSs, echo=FALSE}
+ggplot() + geom_map(data = regions2, 
+                    aes(map_id = id, colour = "red",
+                        fill = regions2$logSMS), 
+                    map = regions2) +
+  expand_limits(x = regions2$long, y = regions2$lat) +
+  scale_fill_continuous(name = "Frecuencia", type = "viridis") +
+  scale_color_brewer(name = "Fronteras", type = "div",  palette = 5) +
+  coord_map() +
+  labs(title = "Mapa de Europa: SMSs",
+       y = "latitud", x = "longitud")
+```
+
+```{r Mapa de Europa: SMSs (relativo), echo=FALSE}
+ggplot() + geom_map(data = regions3, 
+                    aes(map_id = id, colour = "red",
+                        fill = regions3$logDSMS), 
+                    map = regions3) +
+  expand_limits(x = regions3$long, y = regions3$lat) +
+  scale_fill_continuous(name = "Frecuencia", type = "viridis") +
+  scale_color_brewer(name = "Fronteras", type = "div",  palette = 5) +
+  coord_map() +
+  labs(title = "Mapa de Europa: SMSs (relativo)",
+       y = "latitud", x = "longitud")
+```
+
+## Tr&aacute;fico de llamadas
+
+El mapa representa que en general la gente hace m&aacute;s llamadas que manda los mensajes. Aparte de **Italia**, m&aacute;s llamadas fueron establecidas con **Ucrania** y **Rumania**, un poco menos - con **Francia**, **Suiza**, **Reino Unido**, **Alemania**, **Espa&ntilde;a**, **Polonia** y **Rusia**. 
+```{r Mapa de Europa: Llamadas, echo=FALSE}
+ggplot() + geom_map(data = regions2, 
+                    aes(map_id = id, colour = "red",
+                        fill = regions2$logCalls), 
+                    map = regions2) +
+  expand_limits(x = regions2$long, y = regions2$lat) +
+  scale_fill_continuous(name = "Frecuencia", type = "viridis") +
+  scale_color_brewer(name = "Fronteras", type = "div",  palette = 5) +
+  coord_map() +
+  labs(title = "Mapa de Europa: Llamadas",
+       y = "latitud", x = "longitud")
+
+```
+
+La representaci&oacute;n con respecto a la poblaci&oacute;n nos muestra que comparando con la cantidad de la gente que vive en cada pa&iacute;s la gran cantidad hicieron los habitantes de **Suiza**, **Rumania**, **Ucrania** (coincide con el mapa anterior) y tambi&eacute;n **Albania**, **Moldavia** y **Letonia**, **Lituania**, **Estonia**.
+
+```{r Mapa de Europa: LLamadas (relativo), echo=FALSE}
+ggplot() + geom_map(data = regions3, 
+                    aes(map_id = id, colour = "red",
+                        fill = regions3$logDCalls), 
+                    map = regions3) +
+  expand_limits(x = regions3$long, y = regions3$lat) +
+  scale_fill_continuous(name = "Frecuencia", type = "viridis") +
+  scale_color_brewer(name = "Fronteras", type = "div",  palette = 5) +
+  coord_map() +
+  labs(title = "Mapa de Europa: Llamadas (relativo)",
+       y = "latitud", x = "longitud")
+```
+
+## Tr&aacute;fico de Internet
+
+Las regiones que se diferencian son: **Islandia**, **Balcanes**, **Moldavia**, **Ucrania**, **Bielorrusia**. 
+
+```{r Mapa de Europa: Trafico de Internet, echo=FALSE}
+ggplot() + geom_map(data = regions2, 
+                    aes(map_id = id, colour = "red",
+                        fill = regions2$logInternet), 
+                    map = regions2) +
+  expand_limits(x = regions2$long, y = regions2$lat) +
+  scale_fill_continuous(name = "Frecuencia", type = "viridis") +
+  scale_color_brewer(name = "Fronteras", type = "div",  palette = 5) +
+  coord_map() +
+  labs(title = "Mapa de Europa: Trafico de Internet",
+       y = "latitud", x = "longitud")
+```
+
+El mapa que fue pintado utilizando los datos de poblaci&oacute;n muestra que, comparando con la cantidad de habitantes total, el tr&aacute;fico decrece moviendo del oeste al este de Europa. Como en la representaci&oacute;n general, **Suecia** notablemente sobresale que significa que la cantidad del tr&aacute;fico (n&uacute;mero de interacciones) de Internet inflye mucho en la cantidad (n&uacute;mero de interacciones) general.
+
+```{r Mapa de Europa: Trafico de Internet (relativo), echo=FALSE}
+ggplot() + geom_map(data = regions3, 
+                    aes(map_id = id, colour = "red",
+                        fill = regions3$logDInternet), 
+                    map = regions3) +
+  expand_limits(x = regions3$long, y = regions3$lat) +
+  scale_fill_continuous(name = "Frecuencia", type = "viridis") +
+  scale_color_brewer(name = "Fronteras", type = "div",  palette = 5) +
+  coord_map() +
+  labs(title = "Mapa de Europa: Trafico de Internet (relativo)",
+       y = "latitud", x = "longitud")
+```
+
+# An&aacute;lisis por celdas 
+## Generaci&oacute;n del tr&aacute;fico por celdas
+
+Creamos una nueva hoja de datos en la que incluimos la suma y la media del tr&aacute;fico para cada tipo por celdas. Para a&ntilde;adir la informaci&oacute;n por celdas se cre&oacute; una matriz y mediante un bucle la rellenamos con los vectores correspondientes a cada celda. El sumatorio se consigue con la funci&oacute;n colSums() (en nuestro caso es la suma por columnas) y el promedio - con colMeans().
+
+```{r Suma y media por celdas}
+matriz <-matrix(,0,11) #creamos una matriz vacia para la suma de trafico
+      
+for (i in 1:10000)
+{
+      
+      datos[datos$`Square id` == i,]
+      vector <- c(i,colSums(datos[datos$`Square id` == i, 4:8], na.rm = TRUE), 
+                  colMeans(datos[datos$`Square id` == i, 4:8],  na.rm = TRUE))
+      matriz <- rbind(matriz, vector)
+} #rellenamos la matriz con la suma y el promedio del trafico
+colnames(matriz) <- c("Square id", "Suma SMS-in", "Suma SMS-out", "Suma Call-in", "Suma Call-out",
+                      "Suma Internet", "Media SMS-in", "Media SMS-out", "Media Call-in", 
+                      "Media Call-out", "Media Internet")
+suma <- data.frame(matriz) #hacemos una hoja de datos
+```
+
+```{r}
+summary(suma)
+```
+
+### Tr&aacute;fico total 
+
+Todos los histogramas salen muy asim&eacute;tricos a la derecha dado que hay muchas celdas en la ciudad con la actividad de interacciones baja mientras que existen unas cuantas celdas (que casi no podemos ver en la gr&aacute;fica) con el nivel de actividad extraordinariamente alto. Esto fen&oacute;meno es un ejemplo de un "Efecto Mateo": *"Porque a cualquiera que tiene, se le dar&aacute;, y tendr&aacute; m&aacute;s; pero al que no tiene, aun lo que tiene le ser&aacute; quitado"*. 
+
+M&aacute;s probable que los valores de suma m&aacute;s altos pertenecen a las celdas centrales de Mil&aacute;n. Como hemos visto antes, en referencia a la suma, el tr&aacute;fico de Internet ocupa el primer lugar de cantidad (por otro tipo de codificaci&oacute;n), luego la cantidad de SMSs entrantes avanza un poco la cantidad de otros tipos de interacciones.
+
+```{r Histogramas: total}
+hist(suma$Suma.SMS.in, main = 'DF de total: SMSs entrantes', xlab = 'El valor de suma', ylab = 'Distribucion de frecuencias')
+hist(suma$Suma.SMS.out, main = 'DF de total: SMSs salientes', xlab = 'El valor de suma', ylab = 'Distribucion de frecuencias')
+hist(suma$Suma.Call.in, main = 'DF de total: llamadas entrantes', xlab = 'El valor de suma', ylab = 'Distribucion de frecuencias')
+hist(suma$Suma.Call.out, main = 'DF de total: llamadas salientes', xlab = 'El valor de suma', ylab = 'Distribucion de frecuencias')
+hist(suma$Suma.Internet, main = 'DF de total: Internet', xlab = 'El valor de suma', ylab = 'Distribucion de frecuencias')
+```
+
+Los valores del tr&aacute;fico total de mensajes y llamadas son comparables, por eso es posible juntar los cuatro diagramas en una figura del diagrama de cajas. C&oacute;mo en la gran mayor&iacute;a de los datos se acerca al cero y por eso tanto la media, como los percentiles 25%, 50% y 75% se encuentran relativamente cerca al cero.
+
+```{r Estimacion de los valores atipicos: total}
+Ssmsin <- suma$Suma.SMS.in
+Ssmsout <- suma$Suma.SMS.out
+Scallin <- suma$Suma.Call.in
+Scallout <- suma$Suma.Call.out
+Sinter <- suma$Suma.Internet
+boxplot(Sinter, main= "Total: Internet")
+boxplot(Ssmsin, Ssmsout, Scallin, Scallout, names = c("Total: SMS-in", "Total: SMS-out", "Total: Call-in","Total: Call-out"))
+```
+
+### Tr&aacute;fico promedio
+
+Ahora analizamos la media del tr&aacute;fico por interacci&oacute;n; es decir, si antes analiz&aacute;bamos la suma, Y, del tr&aacute;fico de X interacciones, ahora analizamos el promedio, Y/X. En este caso, todas las gr&aacute;ficas siguen siendo asim&eacute;tricas a la derecha pero algunas de ellas (SMSs entrantes, llamadas salientes, Internet) ya siguen a la distribuci&oacute;n m&aacute;s homog&eacute;nea debido a los valores de promedio o a los intervalos m&aacute;s peque&ntilde;os. 
+
+Los valores del tr&aacute;fico del Internet son visiblemente m&aacute;s altos que los otros, pero comparando los valores de llamadas y mensajes se nota que el valor promedio de SMSs salientes alcanza un nivel m&aacute;s alto que todos los dem&aacute;s aunque el valor de total no se diferencia tanto entre todos. Eso se puede explicar por la cantidad diferente de las interacciones por lo que la suma pueda ser igual. As&iacute; la mayor dispersi&oacute;n pertenece a los valores de SMSs salientes y a las llamadas entrantes.
+
+```{r Histogramas: promedio}
+hist(suma$Media.SMS.in, main = 'DF de promedio: SMSs entrantes', xlab = 'El valor de promedio', ylab = 'Distribucion de frecuencias')
+hist(suma$Media.SMS.out, main = 'DF de promedio: SMSs salientes', xlab = 'El valor de promedio', ylab = 'Distribucion de frecuencias')
+hist(suma$Media.Call.in, main = 'DF de promedio: llamadas entrantes', xlab = 'El valor de promedio', ylab = 'Distribucion de frecuencias')
+hist(suma$Media.Call.out, main = 'DF de promedio: llamadas salientes', xlab = 'El valor de promedio', ylab = 'Distribucion de frecuencias')
+hist(suma$Media.Internet, main = 'DF de promedio: Internet', xlab = 'El valor de promedio', ylab = 'Distribucion de frecuencias')
+```
+
+```{r Estimacion de los valores atipicos: promedio}
+Msmsin <- suma$Media.SMS.in
+Msmsout <- suma$Media.SMS.out
+Mcallin <- suma$Media.Call.in
+Mcallout <- suma$Media.Call.out
+Minter <- suma$Media.Internet
+boxplot(Minter, main= "Media: Internet")
+boxplot(Msmsin, Msmsout, Mcallin, Mcallout, names = c("Media: SMS-in", "Media: SMS-out", "Media: Call-in", "Media: Call-out"))
+```
+
+### Medidas de posici&oacute;n, dispersi&oacuten y forma
+
+Podemos ver que en todos los casos el coeficiente de variaci&oacute;n supera a 100% que indica la variaci&oacute;n muy grande y encima, siendo el coeficiente de asimetr&iacute;a positivo y mayor que 0.9, podemos concluir que todas las distribuciones var&iacute;an mucho y son asim&eacute;tricas a la derecha.
+
+```{r Analisis discriptivo: total}
+sumaSMSin <- c(mean(suma$Suma.SMS.in, na.rm= TRUE), quantile(suma$Suma.SMS.in, probs = c(0.25, 0.5, 0.75), na.rm= TRUE), sd(suma$Suma.SMS.in, na.rm= TRUE)/mean(suma$Suma.SMS.in, na.rm= TRUE), skewness(suma$Suma.SMS.in, na.rm= TRUE))
+sumaSMSout <- c(mean(suma$Suma.SMS.out, na.rm= TRUE), quantile(suma$Suma.SMS.out, probs = c(0.25, 0.5, 0.75), na.rm= TRUE), sd(suma$Suma.SMS.out, na.rm= TRUE)/mean(suma$Suma.SMS.out, na.rm= TRUE), skewness(suma$Suma.SMS.out, na.rm= TRUE))
+sumaCallin <- c(mean(suma$Suma.Call.in, na.rm= TRUE), quantile(suma$Suma.Call.in, probs = c(0.25, 0.5, 0.75), na.rm= TRUE), sd(suma$Suma.Call.in, na.rm= TRUE)/mean(suma$Suma.Call.in, na.rm= TRUE), skewness(suma$Suma.Call.in, na.rm= TRUE))
+sumaCallout <- c(mean(suma$Suma.Call.out, na.rm= TRUE), quantile(suma$Suma.Call.out, probs = c(0.25, 0.5, 0.75), na.rm= TRUE), sd(suma$Suma.Call.out, na.rm= TRUE)/mean(suma$Suma.Call.out, na.rm= TRUE), skewness(suma$Suma.Call.out, na.rm= TRUE))
+sumaInternet <- c(mean(suma$Suma.Internet, na.rm= TRUE), quantile(suma$Suma.Internet, probs = c(0.25, 0.5, 0.75), na.rm= TRUE), sd(suma$Suma.Internet, na.rm= TRUE)/mean(suma$Suma.Internet, na.rm= TRUE), skewness(suma$Suma.Internet, na.rm= TRUE))
+```
+
+```{r Analisis discriptivo: promedio}
+mediaSMSin <- c(mean(suma$Media.SMS.in, na.rm= TRUE), quantile(suma$Media.SMS.in, probs = c(0.25, 0.5, 0.75), na.rm= TRUE), sd(suma$Media.SMS.in, na.rm= TRUE)/mean(suma$Media.SMS.in, na.rm= TRUE), skewness(suma$Media.SMS.in, na.rm= TRUE))
+mediaSMSout <- c(mean(suma$Media.SMS.out, na.rm= TRUE), quantile(suma$Media.SMS.out, probs = c(0.25, 0.5, 0.75), na.rm= TRUE), sd(suma$Media.SMS.out, na.rm= TRUE)/mean(suma$Media.SMS.out, na.rm= TRUE), skewness(suma$Media.SMS.out, na.rm= TRUE))
+mediaCallin <- c(mean(suma$Media.Call.in, na.rm= TRUE), quantile(suma$Media.Call.in, probs = c(0.25, 0.5, 0.75), na.rm= TRUE), sd(suma$Media.Call.in, na.rm= TRUE)/mean(suma$Media.Call.in, na.rm= TRUE), skewness(suma$Media.Call.in, na.rm= TRUE))
+mediaCallout <- c(mean(suma$Media.Call.out, na.rm= TRUE), quantile(suma$Media.Call.out, probs = c(0.25, 0.5, 0.75), na.rm= TRUE), sd(suma$Media.Call.out, na.rm= TRUE)/mean(suma$Media.Call.out, na.rm= TRUE), skewness(suma$Media.Call.out, na.rm= TRUE))
+mediaInternet <- c(mean(suma$Media.Internet, na.rm= TRUE), quantile(suma$Media.Internet, probs = c(0.25, 0.5, 0.75), na.rm= TRUE), sd(suma$Media.Internet, na.rm= TRUE)/mean(suma$Media.Internet, na.rm= TRUE), skewness(suma$Media.Internet, na.rm= TRUE))
+```
+
+```{r Representacion de las medidas de posicion, dispercion, forma, echo=FALSE}
+analisis <- matrix(, 0, 6)
+analisis <- rbind(analisis, sumaSMSin)
+analisis <- rbind(analisis, sumaSMSout)
+analisis <- rbind(analisis, sumaCallin)
+analisis <- rbind(analisis, sumaCallout)
+analisis <- rbind(analisis, sumaInternet)
+analisis <- rbind(analisis, mediaSMSin)
+analisis <- rbind(analisis, mediaSMSout)
+analisis <- rbind(analisis, mediaCallin)
+analisis <- rbind(analisis, mediaCallout)
+analisis <- rbind(analisis, mediaInternet)
+colnames(analisis) <- c("Media", "25%", "50%", "75%", "Coef. var", "Coef. asim")
+analisis <- data.frame(analisis)
+print(analisis)
+```
+
+## Transformaci&oacute;n logar&iacute;mica
+
+La raz&oacute;n de este paso consiste en la asimetr&iacute;a de los datos que hemos encontrado al representarlos en la forma de histogramas. Para poder hacerlo ten&iacute;amos que quitar la informaci&oacute;n de las celdas 5239 y 5339, que por alguna raz&oacute;n ten&iacute;an el valor del tr&aacute;fico total igual a 0 (que al pasar a la escala logar&iacute;tmica nos da ???Infinito).
+
+```{r Escala logaritmica}
+suma1 <- suma[-5339,]
+suma1 <- suma1[-5239,]
+logsum <- log(suma1[, 2:11])
+colnames(logsum) <- c("logSuma.SMS.in", "logSuma.SMS.out", "logSuma.Call.in", "logSuma.Call.out", "logSuma.Internet", "logMedia.SMS.in", "logMedia.SMS.out", "logMedia.Call.in", "logMedia.Call.out", "logMedia.Internet")
+```
+
+### Tr&aacute;fico total
+
+Siendo sim&eacute;tricas las distribuciones de mensajes reflejan baja asimetr&iacute;a a la derecha mientras que todos los dem&aacute;s poseen de peque&ntilde;a asimetr&iacute;a a la izquierda. La m&aacute;xima cantidad de interacciones por celdas pertenece al tr&aacute;fico de Internet y el tr&aacute;fico de SMSs entrantes.
+
+```{r Histogramas: total (e. l.)}
+hist(logsum$logSuma.SMS.in, main = 'DF de total (e. l.): SMSs entrantes', xlab = 'El valor de suma', ylab = 'Distribucion de frecuencias')
+hist(logsum$logSuma.SMS.out, main = 'DF de total (e. l.): SMSs salientes', xlab = 'El valor de suma', ylab = 'Distribucion de frecuencias')
+hist(logsum$logSuma.Call.in, main = 'DF de total (e. l.): llamadas entrantes', xlab = 'El valor de suma', ylab = 'Distribucion de frecuencias')
+hist(logsum$logSuma.Call.out, main = 'DF de total (e. l.): llamadas salientes', xlab = 'El valor de suma', ylab = 'Distribucion de frecuencias')
+hist(logsum$logSuma.Internet, main = 'DF de total (e. l.): Internet', xlab = 'El valor de suma', ylab = 'Distribucion de frecuencias')
+```
+
+Los valores at&iacute;picos (disminuyendo en su cantidad) aparecen tanto en valores altos como en bajos. Eso se explica por la mayor simetr&iacute;a y menor variaci&oacute;n de los datos en la escala logar&iacute;tmica.
+
+```{r Estimacion de los valores atipicos: total (e. l.)}
+logSsmsin <- logsum$logSuma.SMS.in
+logSsmsout <- logsum$logSuma.SMS.out
+logScallin <- logsum$logSuma.Call.in
+logScallout <- logsum$logSuma.Call.out
+logSinter <- logsum$logSuma.Internet
+boxplot(logSsmsin, logSsmsout, logScallin, logScallout, logSinter, main= "Total (e. l.)", names = c("SMS-in", "SMS-out", "Call-in","Call-out", "Internet"))
+```
+
+### Tr&aacute;fico promedio
+
+Los valores obtenidos del promedio son tanto positivos como negativos, dado que alguna parte de los datos del promedio se encuentra en un intervalo [0,1]. En este caso todas las figuras demuestran la simetr&iacute;a con algo de inclinaci&oacute;n a la izquierda.
+```{r Histogramas: promedio (e. l.)}
+hist(logsum$logMedia.SMS.in, main = 'DF de promedio (e. l.): SMSs entrantes', xlab = 'El valor de promedio', ylab = 'Distribucion de frecuencias')
+hist(logsum$logMedia.SMS.out, main = 'DF de promedio (e. l.): SMSs salientes', xlab = 'El valor de promedio', ylab = 'Distribucion de frecuencias')
+hist(logsum$logMedia.Call.in, main = 'DF de promedio (e. l.): llamadas entrantes', xlab = 'El valor de promedio', ylab = 'Distribucion de frecuencias')
+hist(logsum$logMedia.Call.out, main = 'DF de promedio (e. l.): llamadas salientes', xlab = 'El valor de promedio', ylab = 'Distribucion de frecuencias')
+hist(logsum$logMedia.Internet, main = 'DF de promedio (e. l.): Internet', xlab = 'El valor de promedio', ylab = 'Distribucion de frecuencias')
+```
+
+```{r Estimacion de los valores atipicos: promedio (e. l.)}
+logMsmsin <- logsum$logMedia.SMS.in
+logMsmsout <- logsum$logMedia.SMS.out
+logMcallin <- logsum$logMedia.Call.in
+logMcallout <- logsum$logMedia.Call.out
+logMinter <- logsum$logMedia.Internet
+boxplot(logMsmsin, logMsmsout, logMcallin, logMcallout, logMinter, main= "Promedio (e. l.)", names = c("SMS-in", "SMS-out", "Call-in", "Call-out", "Internet"))
+```
+
+### Medidas de posici&oacute;n, dispersi&oacuten y forma (e. l.)
+
+```{r Analisis discriptivo: total (e. l.)}
+LOGsumaSMSin <- c(mean(logsum$logSuma.SMS.in, na.rm= TRUE), quantile(logsum$logSuma.SMS.in, probs = c(0.25, 0.5, 0.75), na.rm= TRUE), sd(logsum$logSuma.SMS.in, na.rm= TRUE)/mean(logsum$logSuma.SMS.in, na.rm= TRUE), skewness(logsum$logSuma.SMS.in, na.rm= TRUE))
+LOGsumaSMSout <- c(mean(logsum$logSuma.SMS.out, na.rm= TRUE), quantile(logsum$logSuma.SMS.out, probs = c(0.25, 0.5, 0.75), na.rm= TRUE), sd(logsum$logSuma.SMS.out, na.rm= TRUE)/mean(logsum$logSuma.SMS.out, na.rm= TRUE), skewness(logsum$logSuma.SMS.out, na.rm= TRUE))
+LOGsumaCallin <- c(mean(logsum$logSuma.Call.in, na.rm= TRUE), quantile(logsum$logSuma.Call.in, probs = c(0.25, 0.5, 0.75), na.rm= TRUE), sd(logsum$logSuma.Call.in, na.rm= TRUE)/mean(logsum$logSuma.Call.in, na.rm= TRUE), skewness(logsum$logSuma.Call.in, na.rm= TRUE))
+LOGsumaCallout <- c(mean(logsum$logSuma.Call.out, na.rm= TRUE), quantile(logsum$logSuma.Call.out, probs = c(0.25, 0.5, 0.75), na.rm= TRUE), sd(logsum$logSuma.Call.out, na.rm= TRUE)/mean(logsum$logSuma.Call.out, na.rm= TRUE), skewness(logsum$logSuma.Call.out, na.rm= TRUE))
+LOGsumaInternet <- c(mean(logsum$logSuma.Internet, na.rm= TRUE), quantile(logsum$logSuma.Internet, probs = c(0.25, 0.5, 0.75), na.rm= TRUE), sd(logsum$logSuma.Internet, na.rm= TRUE)/mean(logsum$logSuma.Internet, na.rm= TRUE), skewness(logsum$logSuma.Internet, na.rm= TRUE))
+```
+
+```{r Analisis discriptivo: promedio (e. l.)}
+LOGmediaSMSin <- c(mean(logsum$logMedia.SMS.in, na.rm= TRUE), quantile(logsum$logMedia.SMS.in, probs = c(0.25, 0.5, 0.75), na.rm= TRUE), sd(logsum$logMedia.SMS.in, na.rm= TRUE)/mean(logsum$logMedia.SMS.in, na.rm= TRUE), skewness(logsum$logMedia.SMS.in, na.rm= TRUE))
+mediaSMSout <- c(mean(logsum$logMedia.SMS.out, na.rm= TRUE), quantile(logsum$Mlogedia.SMS.out, probs = c(0.25, 0.5, 0.75), na.rm= TRUE), sd(logsum$logMedia.SMS.out, na.rm= TRUE)/mean(logsum$logMedia.SMS.out, na.rm= TRUE), skewness(logsum$logMedia.SMS.out, na.rm= TRUE))
+LOGmediaCallin <- c(mean(logsum$logMedia.Call.in, na.rm= TRUE), quantile(logsum$logMedia.Call.in, probs = c(0.25, 0.5, 0.75), na.rm= TRUE), sd(logsum$logMedia.Call.in, na.rm= TRUE)/mean(logsum$logMedia.Call.in, na.rm= TRUE), skewness(logsum$logMedia.Call.in, na.rm= TRUE))
+LOGmediaCallout <- c(mean(logsum$logMedia.Call.out, na.rm= TRUE), quantile(logsum$logMedia.Call.out, probs = c(0.25, 0.5, 0.75), na.rm= TRUE), sd(logsum$logMedia.Call.out, na.rm= TRUE)/mean(logsum$logMedia.Call.out, na.rm= TRUE), skewness(logsum$logMedia.Call.out, na.rm= TRUE))
+LOGmediaInternet <- c(mean(logsum$logMedia.Internet, na.rm= TRUE), quantile(logsum$logMedia.Internet, probs = c(0.25, 0.5, 0.75), na.rm= TRUE), sd(logsum$logMedia.Internet, na.rm= TRUE)/mean(logsum$logMedia.Internet, na.rm= TRUE), skewness(logsum$logMedia.Internet, na.rm= TRUE))
+```
+
+```{r Representacion de las medidas de posicion, dispercion, forma (e. l.), echo=FALSE}
+LOGanalisis <- matrix(, 0, 6)
+LOGanalisis <- rbind(LOGanalisis, sumaSMSin)
+LOGanalisis <- rbind(LOGanalisis, sumaSMSout)
+LOGanalisis <- rbind(LOGanalisis, sumaCallin)
+LOGanalisis <- rbind(LOGanalisis, sumaCallout)
+LOGanalisis <- rbind(LOGanalisis, sumaInternet)
+LOGanalisis <- rbind(LOGanalisis, mediaSMSin)
+LOGanalisis <- rbind(LOGanalisis, mediaSMSout)
+LOGanalisis <- rbind(LOGanalisis, mediaCallin)
+LOGanalisis <- rbind(LOGanalisis, mediaCallout)
+LOGanalisis <- rbind(LOGanalisis, mediaInternet)
+colnames(LOGanalisis) <- c("Media", "25%", "50%", "75%", "Coef. var", "Coef. asim")
+LOGanalisis <- data.frame(LOGanalisis)
+print(LOGanalisis)
+```
+
+## Din&aacute;mica de generaci&oacute;n del tr&aacute;fico
+
+Las celdas con la m&aacute;xima frecuencia de las interacciones se encuentran en un intervalo de la celda 5059 a la 6165 que est%aacute; por la mitad de la numeraci&oacute;n asignada para Mil&aacute;n. Eso significa que las celdas representadas deben coincidir con el centro de la ciudad y as?? se puede explicar la actividad tan alta que sufren estas celdas. El mejor modo de comprobar nuestra hip&oacute;tesis es juntar el mapa del Mil&aacute;n con el mapa de celdas (por las coordenadas dadas) y ver con qu&eacute; barrios o lugares de inter&eacute;s coinciden las celdas representadas en el diagrama.
+```{r Informacion por celdas}
+celda <- table(datos$`Square id`)
+celdasort <- sort(as.vector(celda))
+plot(celdasort, main = "DF de las celdas", xlab = "", ylab = "Frecuencia")
+lines(c(0,10000), c(1800,1800), col = 2)
+barplot(celda[celda > 1800])
+celdamax <- celda[celda > 1800]
+barplot(celdamax, main = "Celdas con la frecuencia maxima", xlab = "N de la celda", ylab = "Frecuencia")
+print(celdamax)
+```
+
+```{r Datos para representacion grafica de las celdas, echo=FALSE, include=FALSE}
+milangrid2 <- geojson_read("milano-grid.geojson", what = "sp")
+milangrid3 <- fortify(milangrid2)
+
+puntos <- read_xlsx("puntos.xlsx")
+rownames(puntos) <- (c("x1", "x2", "x3", "x4"))
+colnames(puntos) <- c("Name", "lat", "long")
+puntos$lat <- as.numeric(puntos$lat)
+puntos$long <- as.numeric(puntos$long)
+sbbox <- make_bbox(lon = puntos$long, lat = puntos$lat)
+carta <- get_map(location = sbbox, maptype = "terrain",source = "google")
+carta2 <- ggmap(carta)
+
+celdamax2 <- as.data.frame(celdamax)
+colnames(celdamax2) <- c("id", "freq")
+celdamax2$id <- as.numeric(as.character(celdamax2$id)) 
+milangrid3$id <- as.numeric(as.character(milangrid3$id)) 
+milangrid4 <- inner_join(milangrid3, celdamax2, by = "id")
+```
+
+```{r Mapa de Milan: celdas, echo=FALSE}
+print(carta2 +
+       geom_path(aes(long,lat, group = group), data = milangrid3, colour = "red") +
+       geom_polygon(aes(long,lat, group = group, fill = milangrid4$freq), 
+                    data = milangrid4, alpha = 0.5) +
+        scale_fill_continuous(name = "Frecuencias", type = "viridis") +
+        labs(title = "Mapa de Milan", y = "latitud", x = "longitud"))
+```
+
+```{r Datos para representacion Milan:centro I, echo=FALSE, include=FALSE, warning=FALSE}
+puntos2 <- read_xlsx("puntos2.xlsx")
+rownames(puntos2) <- (c("x1", "x2", "x3", "x4"))
+colnames(puntos2) <- c("Name", "lat", "long")
+puntos2$lat <- as.numeric(puntos2$lat)
+puntos2$long <- as.numeric(puntos2$long)
+sbbox2 <- make_bbox(lon = puntos2$long, lat = puntos2$lat)
+carta3 <- get_map(location = sbbox2, maptype = "terrain",source = "google")
+carta4 <- ggmap(carta3)
+```
+
+```{r Mapa de Milan:centro I, echo=FALSE, warning=FALSE}
+print(carta4 +
+        geom_path(aes(long,lat, group = group), data = milangrid3, colour = "red") +
+        geom_polygon(aes(long,lat, group = group, fill = milangrid4$freq), 
+                     data = milangrid4, 
+                      alpha = 0.8) +
+        scale_fill_continuous(name = "Frecuencias", type = "viridis") +
+      labs(title = "Mapa de Milan: Centro", y = "latitud", x = "longitud"))
+```
+
+```{r Datos para representacion Milan:centro II, echo=FALSE, include=FALSE, warning=FALSE}
+puntos21 <- read_xlsx("puntos21.xlsx")
+rownames(puntos21) <- (c("x1", "x2", "x3", "x4"))
+colnames(puntos21) <- c("Name", "lat", "long")
+puntos21$lat <- as.numeric(puntos21$lat)
+puntos21$long <- as.numeric(puntos21$long)
+sbbox21 <- make_bbox(lon = puntos21$long, lat = puntos21$lat)
+carta31 <- get_map(location = sbbox21, maptype = "terrain",source = "google")
+carta41 <- ggmap(carta31)
+```
+
+```{r Mapa de Milan:centro II, echo=FALSE, warning=FALSE}
+print(carta41 +
+        geom_path(aes(long,lat, group = group), data = milangrid3, colour = "red") +
+        geom_polygon(aes(long,lat, group = group, fill = milangrid4$freq), 
+                     data = milangrid4, 
+                     alpha = 0.5) +
+        scale_fill_continuous(name = "Frecuencias", type = "viridis") +
+      labs(title = "Mapa de Milan: Centro", y = "latitud", x = "longitud"))
+```
+
+```{r Datos para representacion Milan:centro III, echo=FALSE, include=FALSE, warning=FALSE}
+puntos211 <- read_xlsx("puntos211.xlsx")
+rownames(puntos211) <- (c("x1", "x2", "x3", "x4"))
+colnames(puntos211) <- c("Name", "lat", "long")
+puntos211$lat <- as.numeric(puntos211$lat)
+puntos211$long <- as.numeric(puntos211$long)
+sbbox211 <- make_bbox(lon = puntos211$long, lat = puntos211$lat)
+carta311 <- get_map(location = sbbox211, maptype = "terrain",source = "google")
+carta411 <- ggmap(carta311)
+```
+
+```{r Mapa de Milan:centro III, echo=FALSE, warning=FALSE}
+print(carta411 +
+        geom_path(aes(long,lat, group = group), data = milangrid3, colour = "red") +
+        geom_polygon(aes(long,lat, group = group, fill = milangrid4$freq), 
+                     data = milangrid4, 
+                     alpha = 0.5) +
+        scale_fill_continuous(name = "Frecuencias", type = "viridis") +
+      labs(title = "Mapa de Milan: Duomo di Milano ", y = "latitud", x = "longitud"))
+```
+
+```{r Datos para representacion Milan:centro IV, echo=FALSE, include=FALSE, warning=FALSE}
+puntos212 <- read_xlsx("puntos212.xlsx")
+rownames(puntos212) <- (c("x1", "x2", "x3", "x4"))
+colnames(puntos212) <- c("Name", "lat", "long")
+puntos212$lat <- as.numeric(puntos212$lat)
+puntos212$long <- as.numeric(puntos212$long)
+sbbox212 <- make_bbox(lon = puntos212$long, lat = puntos212$lat)
+carta312 <- get_map(location = sbbox212, maptype = "terrain",source = "google")
+carta412 <- ggmap(carta312)
+```
+
+```{r Mapa de Milan:centro IV, echo=FALSE, warning=FALSE}
+print(carta412 +
+        geom_path(aes(long,lat, group = group), data = milangrid3, colour = "red") +
+        geom_polygon(aes(long,lat, group = group, fill = milangrid4$freq), 
+                     data = milangrid4, 
+                     alpha = 0.5) +
+        scale_fill_continuous(name = "Frecuencias", type = "viridis") +
+        labs(title = "Mapa de Milan: metro", y = "latitud", x = "longitud"))
+```
+
+```{r Datos para representacion Milan:centro V, echo=FALSE, include=FALSE, warning=FALSE}
+puntos22 <- read_xlsx("puntos22.xlsx")
+rownames(puntos22) <- (c("x1", "x2", "x3", "x4"))
+colnames(puntos22) <- c("Name", "lat", "long")
+puntos22$lat <- as.numeric(puntos22$lat)
+puntos22$long <- as.numeric(puntos22$long)
+sbbox22 <- make_bbox(lon = puntos22$long, lat = puntos22$lat)
+carta32 <- get_map(location = sbbox22, maptype = "terrain",source = "google")
+carta42 <- ggmap(carta32)
+```
+
+```{r Mapa de Milan:centro V, echo=FALSE, warning=FALSE}
+print(carta42 +
+        geom_path(aes(long,lat, group = group), data = milangrid3, colour = "red") +
+        geom_polygon(aes(long,lat, group = group, fill = milangrid4$freq), 
+                     data = milangrid4, 
+                     alpha = 0.5) +
+        scale_fill_continuous(name = "Frecuencias", type = "viridis") +
+      labs(title = "Mapa de Milan: Estacion central", y = "latitud", x = "longitud"))
+```
+
+Las celdas con la cantidad m&aacute;xima de las interacciones coinciden con la **Estaci&oacute;n Central de Mil&aacute;n** y la famosa **Catedral de Mil&aacute;n**. Las celdas azules y violetas coinciden con siguientes estaciones del metro: **Loreto**, **Lima**, **Centrale**, **Duomo**. En el &uacute;ltimo mapa no hemos podido sacar alg&uacute;n edificio o elemento de la red de transporte preciso porque las celdas indicadas contienen muchas lugares de inter&eacute;s. 
