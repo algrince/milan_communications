@@ -1,7 +1,7 @@
 ## Communications in Milan
 
 This is an educational project that was made for completing Statistics in the university. The main language of the project is Spanish. The programming language is R.
-This repository contains the raw code file .rmd that generates .html file that contains all the output.
+This repository contains the raw code file .rmd that generates .html file that contains the output.
 
 ### Main objectives
 
